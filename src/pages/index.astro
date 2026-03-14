@@ -22,7 +22,11 @@ const feature = posts[0];
 		<main>
 			{feature && (
 				<section class="hero feature-card">
-					<img class="feature-img" src="/src/assets/blog-1/1768920494562.jpeg" alt="" />
+					{feature.data.heroImage ? (
+						<img class="feature-img" src={feature.data.heroImage.src} alt={feature.data.title} loading="lazy" />
+					) : (
+						<img class="feature-img" src="/iconx32Colored.png" alt="" loading="lazy" />
+					)}
 					<div class="feature-body">
 						<p class="feature-date"><FormattedDate date={feature.data.pubDate} /></p>
 						<h1>{feature.data.title}</h1>
