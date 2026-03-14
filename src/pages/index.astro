@@ -22,8 +22,8 @@ const feature = posts[0];
 		<main>
 			{feature && (
 				<section class="hero feature-card">
-					{feature.data.heroImage ? (
-						<img class="feature-img" src={feature.data.heroImage.src} alt={feature.data.title} loading="lazy" />
+					{feature.data.previewHeroImage ? (
+						<img class="feature-img" src={feature.data.previewHeroImage.src} alt={feature.data.title} loading="lazy" />
 					) : (
 						<img class="feature-img" src="/iconx32Colored.png" alt="" loading="lazy" />
 					)}
