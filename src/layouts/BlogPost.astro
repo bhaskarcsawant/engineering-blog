@@ -1,86 +1,308 @@
 ---
 import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
+import '../styles/global.css';
 import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
-
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, authorDesignation, pubDate, updatedDate, heroImage, authorImage } = Astro.props;
+const authorName = Astro.props.authorName ?? 'Bhaskar Sawant';
+const designation = authorDesignation ?? 'Author';
 ---
 
 <html lang="en">
 	<head>
 		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
 	</head>
 
 	<body>
-		<Header />
-		<main>
-			<article>
-				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
-							{
-								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
-									</div>
-								)
-							}
+		<div class="page">
+			<Header />
+
+			<main class="article-shell">
+				<section class="title-card">
+					<h1>{title}</h1>
+					<p class="dek">{description}</p>
+					<div class="meta-row">
+						<div class="avatar" aria-hidden="true">
+							{authorImage ? (
+								<Image class="avatar-img" width={64} height={64} src={authorImage} alt="Author photo" />
+							) : (
+								<span class="avatar-fallback">B</span>
+							)}
 						</div>
-						<h1>{title}</h1>
-						<hr />
+						<div class="meta-text">
+							<p class="meta-name">{authorName}</p>
+							<p class="meta-role">{designation}</p>
+							<p class="meta-date">
+								{updatedDate && (
+									<>
+										<span>·</span>
+										<span>Updated <FormattedDate date={updatedDate} /></span>
+									</>
+								)}
+							</p>
+						</div>
 					</div>
+					<div class="divider-1"></div>
+				</section>
+
+				{heroImage && (
+					<div class="hero-image">
+						<Image width={1400} height={700} src={heroImage} alt="" />
+					</div>
+				)}
+
+				<article class="prose">
 					<slot />
-				</div>
-			</article>
-		</main>
-		<Footer />
+				</article>
+			</main>
+			<Footer />
+		</div>
 	</body>
+
+	<style>
+		/* critical base fallback to avoid unstyled pages */
+		:global(body) {
+			margin: 0;
+			font-family: 'Inter', -apple-system, system-ui, sans-serif;
+			background: #fff;
+			color: #0b0f14;
+			letter-spacing: 0.01em;
+			-webkit-font-smoothing: antialiased;
+  			-moz-osx-font-smoothing: grayscale;
+		}
+
+		:global(a) {
+			color: inherit;
+			text-decoration: none;
+		}
+
+		.divider-1{
+			padding: 0.3px;
+			border-radius: 999px;
+			background: #6B6B6B;
+			opacity: 0.3;
+			width: 100%;
+			margin: 20px 0 0 0;
+		}
+
+		.page {
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			background: #fff;
+		}
+
+		.article-shell {
+			flex: 1;
+			width: min(100%, 760px);
+			margin: 0 auto;
+			padding: 2.4rem 1.25rem 4rem;
+			display: flex;
+			flex-direction: column;
+			gap: 2rem;
+		}
+
+		.title-card {
+			text-align: left;
+			display: flex;
+			flex-direction: column;
+			gap: 0.6rem;
+		}
+
+		h1 {
+			margin: 0;
+			line-height: 52px;
+			color: #242424;
+			font-style: normal;
+			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+			letter-spacing: 0.2px;
+			margin-top: 1.19em;
+			margin-bottom: 0.1em;
+			-webkit-font-smoothing: antialiased;
+	  		-moz-osx-font-smoothing: grayscale;
+			font-weight: 800 !important;
+			font-size: 40px !important;
+			word-spacing: -3px !important;
+		}
+
+		.dek {
+			font-size: 23px;
+			line-height: 28px;
+			font-style: normal;
+			color: #6B6B6B;
+			letter-spacing: 0;
+			margin-bottom: 24px;
+			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+			font-weight: 400;
+			-webkit-font-smoothing: antialiased;
+	  		-moz-osx-font-smoothing: grayscale;
+			margin-top: -6px;
+			word-spacing: 1px !important;
+		}
+
+		.meta-row {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			color: #4a5563;
+		}
+
+		.avatar {
+			width: 56px;
+			height: 56px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #7f5af0, #5ce1e6);
+			color: white;
+			display: grid;
+			place-items: center;
+			overflow: hidden;
+		}
+
+		.avatar-img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+			border-radius: 50%;
+		}
+
+		.avatar-fallback {
+			font-weight: 800;
+			font-family: 'Inter', sans-serif;
+		}
+
+		.meta-text {
+			display: flex;
+			flex-direction: column;
+			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+			gap: 0.05rem;
+			text-align: left;
+		}
+
+		.meta-name {
+			margin: 0;
+			font-weight: 600;
+			color: #1f2933;
+			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		}
+
+		.meta-role {
+			margin: 0;
+			margin-top: 5px;
+			color: #6b7280;
+			font-size: 0.95rem;
+			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		}
+
+		.meta-date {
+			margin: 0;
+			color: #666;
+			font-size: 0.90rem;
+			letter-spacing: 0.01em;
+			font-weight: 500;
+			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
+		}
+
+		.meta-date span {
+			margin: 0 0.35rem;
+		}
+
+		.hero-image {
+			margin: 0 auto;
+			width: 100%;
+			padding: 0.5rem 0 1rem;
+		}
+
+		.hero-image img {
+			width: 100%;
+			border-radius: 12px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+		}
+		
+
+		:global(.prose) {
+			padding: 0;
+			font-family: 'Martel', 'Noto Serif JP', 'Source Serif 4', Georgia, Cambria, "Times New Roman", Times, serif;
+			letter-spacing: -0.003em;
+			line-height: 1.9;
+			margin-top: 12px;
+			margin-bottom: 0;
+			font-style: normal;
+			word-break: break-word;
+			color: #242424;
+			font-weight: 500;
+			font-size: 17px;
+		}
+
+		:global(.prose h2) {
+			margin-top: 1.4em;
+			font-family: 'Inter', sans-serif;
+			color: #242424;
+			font-size: 1.35rem;
+			font-weight: 700;
+		}
+
+		:global(.prose p),
+		:global(.prose li),
+		:global(.prose span) {
+			margin: 0 0 30px;
+			font-size: inherit;
+			font-weight: 600;
+			color: #242424;
+		}
+
+		:global(.prose li) {
+			margin-bottom: 0.6em;
+		}
+
+		:global(.prose a) {
+			text-decoration: underline;
+			text-underline-offset: 3px;
+			text-decoration-thickness: 1.5px;
+		}
+
+		:global(.prose .quote-title) {
+			margin: 20px 0;
+			margin-bottom: 30px;
+			margin-left: -20px;
+			padding-left: 1rem;
+			border-left: 3px solid #1f2933;
+			font-style: italic;
+			font-size: 17px;
+			font-weight: 600;
+			color: #1f2933;
+		}
+
+		:global(.prose img) {
+			display: block;
+			max-width: 100%;
+			height: auto;
+			margin: 40px auto;
+			border-radius: 1px;
+		}
+
+		:global(.prose .dot-divider) {
+			display: flex;
+			justify-content: center;
+			gap: 0.6rem;
+			font-size: 1.4rem;
+			letter-spacing: 0.35rem;
+			color: #111;
+			margin: 2.5rem 0;
+			font-weight: 700;
+		}
+
+		@media (max-width: 720px) {
+			.article-shell {
+				width: min(100%, 92vw);
+				padding: 2rem 1rem 3rem;
+			}
+			h1 {
+				font-size: 2.4rem;
+			}
+		}
+	</style>
 </html>
