@@ -57,6 +57,18 @@ const designation = authorDesignation ?? 'Author';
 				<article class="prose">
 					<slot />
 				</article>
+
+				<section class="news-section">
+					<div class="newsletter">
+						<script src="https://js.hsforms.net/forms/embed/5415045.js" defer></script>
+						<div
+							class="hs-form-frame"
+							data-region="na1"
+							data-form-id="ab15e5d8-bac1-46a4-8ce9-0c053ac23074"
+							data-portal-id="5415045"
+						></div>
+					</div>
+				</section>
 			</main>
 			<Footer />
 		</div>
@@ -295,6 +307,34 @@ const designation = authorDesignation ?? 'Author';
 			font-weight: 700;
 		}
 
+	.news-section{
+			width: 98.9vw;
+			background: #fff;
+			background: #d300ff0f;
+			background: #00000012;
+			border-top: 1px solid black;
+			border-bottom: 1px solid black;
+			padding: 10px 0px;
+			margin-left: -51%;
+			margin-bottom: -64px;
+		}
+
+		.newsletter {
+			max-width: 780px;
+			width: 100%;
+			margin: 3rem auto 4rem;
+			padding: 4px;
+			border: 1.5px solid #0b0f14;
+			border-radius: 14px;
+			box-shadow: 0 18px 40px rgba(0, 0, 0, 0.06);
+			background: #fff;
+		}
+
+		.newsletter .hs-form-frame {
+			display: block;
+			width: 100%;
+		}
+
 		@media (max-width: 720px) {
 			.article-shell {
 				width: min(100%, 92vw);
@@ -302,6 +342,11 @@ const designation = authorDesignation ?? 'Author';
 			}
 			h1 {
 				font-size: 2.4rem;
+			}
+
+			.newsletter {
+				padding: 1.25rem 1rem;
+				margin: 0 auto;
 			}
 		}
 	</style>
