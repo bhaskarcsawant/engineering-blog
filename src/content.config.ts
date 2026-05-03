@@ -15,9 +15,12 @@ const blog = defineCollection({
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
 			previewHeroImage: z.optional(image()),
-			authorImage: z.optional(image()),
-			authorName: z.string().optional(),
-			authorDesignation: z.string().optional(),
+			// Each author field accepts either a single value or an array of values.
+			// Use arrays for co-authored posts; the layout stacks avatars and joins names.
+			authorName: z.union([z.string(), z.array(z.string())]).optional(),
+			authorImage: z.union([image(), z.array(image())]).optional(),
+			authorDesignation: z.union([z.string(), z.array(z.string())]).optional(),
+			category: z.string().optional(),
 		}),
 });
 

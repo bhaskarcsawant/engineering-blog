@@ -1,19 +1,21 @@
 ---
 title: "Echo: how we built bulk calling that doesn't fall apart"
 description: "How Emitrr's Echo system solves rate limiting, concurrency, and multi-tenant fairness for bulk calling at scale — and what the code actually does."
-authorName: "Param Saluja & Bhaskar Sawant"
+authorName:
+  - "Param Saluja"
+  - "Bhaskar Sawant"
+authorDesignation:
+  - "Engineering"
+  - "Engineering"
 category: "Infrastructure & Telephony"
 pubDate: "2025-05-01"
 previewHeroImage: "../../assets/blog-2/echo_hero_image.svg"
 ---
 
-import { Callout } from "@/components/Callout";
-import { Diagram } from "@/components/Diagram";
-import { CodeBlock } from "@/components/CodeBlock";
+import Callout from "../../components/Callout.astro";
+import Diagram from "../../components/Diagram.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
 
-# Echo: how we built bulk calling that doesn't fall apart
-
-**Emitrr Platform Team · Infrastructure & Telephony**
 
 Bulk calling is one of those things that looks simple until you're actually doing it at scale.
 You have a list of contacts, you want to place calls — outreach campaigns, reminders, follow-ups.
