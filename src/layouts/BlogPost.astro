@@ -159,26 +159,23 @@ const eyebrow = category ?? 'Engineering';
 			margin: 0;
 		}
 
-		/* Medium-style title — Source Serif 4, large, tight tracking */
 		h1 {
 			margin: 0.25rem 0 0;
-			font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
-			font-weight: 700;
-			font-size: clamp(2.25rem, 4.6vw, 2.875rem);
-			line-height: 1.15;
-			letter-spacing: -0.022em;
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: clamp(2rem, 4.4vw, 3rem);
+			line-height: 1.1;
+			letter-spacing: -0.01em;
 			color: var(--ink-strong);
 		}
 
-		/* Medium-style subtitle — same serif, regular, muted gray */
 		.dek {
-			margin: 0.5rem 0 0.6rem;
-			font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+			margin: 0.4rem 0 0.6rem;
+			font-family: var(--font-serif);
 			font-weight: 400;
-			font-size: 1.4rem;
-			line-height: 1.35;
-			letter-spacing: -0.012em;
-			color: #6b6b6b;
+			font-size: 1.25rem;
+			line-height: 1.45;
+			color: var(--ink-muted);
 		}
 
 		.meta-row {
@@ -211,6 +208,27 @@ const eyebrow = category ?? 'Engineering';
 			flex-shrink: 0;
 			border: 2px solid var(--bg);
 			box-sizing: content-box;
+			position: relative;
+		}
+
+		/* Keep the first author visually on top when avatars overlap. */
+		.avatar-stack .avatar:nth-child(1) {
+			z-index: 6;
+		}
+		.avatar-stack .avatar:nth-child(2) {
+			z-index: 5;
+		}
+		.avatar-stack .avatar:nth-child(3) {
+			z-index: 4;
+		}
+		.avatar-stack .avatar:nth-child(4) {
+			z-index: 3;
+		}
+		.avatar-stack .avatar:nth-child(5) {
+			z-index: 2;
+		}
+		.avatar-stack .avatar:nth-child(6) {
+			z-index: 1;
 		}
 
 		/* Cycle accent shade per author so stacked avatars stay distinguishable. */
@@ -267,42 +285,51 @@ const eyebrow = category ?? 'Engineering';
 			border-radius: var(--radius-md);
 		}
 
-		/* Medium-style reading body — Source Serif 4, 21px, 1.58 line-height */
+		/* Editorial body — Source Serif 4 ─────────────────────── */
 		:global(.prose) {
-			font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, Cambria, 'Times New Roman', Times, serif;
+			font-family: var(--font-serif);
 			font-weight: 400;
-			font-size: 21px;
-			line-height: 1.58;
+			font-size: 19px;
+			line-height: 1.75;
 			letter-spacing: -0.003em;
-			color: rgba(41, 41, 41, 1);
+			color: var(--ink);
 			margin-top: 0.5rem;
+		}
+
+		:global(.prose > p:first-of-type::first-letter) {
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: 3.4em;
+			line-height: 0.9;
+			float: left;
+			padding: 0.18em 0.12em 0 0;
+			color: var(--ink-strong);
 		}
 
 		:global(.prose p),
 		:global(.prose li) {
-			margin: 0 0 1.6rem;
-			color: rgba(41, 41, 41, 1);
+			margin: 0 0 1.25rem;
+			color: var(--ink);
 		}
 
-		/* Section heads — Medium keeps these in serif, bolder than body */
 		:global(.prose h2) {
-			margin: 2.4rem 0 0.4rem;
-			font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
-			font-weight: 700;
-			font-size: 1.75rem;
-			line-height: 1.22;
-			letter-spacing: -0.014em;
+			margin: 2.2rem 0 0.75rem;
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: 1.6rem;
+			line-height: 1.2;
 			color: var(--ink-strong);
+			letter-spacing: -0.005em;
 		}
 
 		:global(.prose h3) {
-			margin: 2rem 0 0.3rem;
-			font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
-			font-weight: 700;
-			font-size: 1.35rem;
-			line-height: 1.25;
-			letter-spacing: -0.012em;
-			color: var(--ink-strong);
+			margin: 1.8rem 0 0.5rem;
+			font-family: var(--font-sans);
+			font-weight: 600;
+			font-size: 1.05rem;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: var(--ink-faint);
 		}
 
 		:global(.prose a) {
@@ -316,18 +343,16 @@ const eyebrow = category ?? 'Engineering';
 			color: var(--accent-ink);
 		}
 
-		/* Medium-style pull quote — large italic serif with a thick left rule */
 		:global(.prose blockquote),
 		:global(.prose .quote-title) {
-			margin: 2rem 0;
-			padding: 0.2rem 0 0.2rem 1.4rem;
-			border-left: 3px solid var(--ink-strong);
-			font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+			margin: 1.6rem 0;
+			padding: 0.4rem 0 0.4rem 1.1rem;
+			border-left: 3px solid var(--accent);
+			font-family: var(--font-serif);
 			font-style: italic;
-			font-weight: 400;
-			font-size: 1.6rem;
-			line-height: 1.4;
-			letter-spacing: -0.014em;
+			font-weight: 500;
+			font-size: 1.15rem;
+			line-height: 1.5;
 			color: var(--ink-strong);
 		}
 
@@ -412,8 +437,8 @@ const eyebrow = category ?? 'Engineering';
 
 		.newsletter-card h2 {
 			margin: 0;
-			font-family: var(--font-display);
-			font-weight: 700;
+			font-family: var(--font-serif);
+			font-weight: 600;
 			font-size: 1.4rem;
 			line-height: 1.2;
 			color: var(--ink-strong);
