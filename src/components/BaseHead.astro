@@ -1,6 +1,5 @@
 ---
-// Import the global.css file here so that it is included on
-// all pages through the use of the <BaseHead /> component.
+// Loaded on every page through site layouts.
 import '../styles/global.css';
 import type { ImageMetadata } from 'astro';
 import { SITE_TITLE } from '../consts';
@@ -21,7 +20,6 @@ const { title, description, image } = Astro.props;
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" type="image/png" sizes="32x32" href="/iconx32.png" />
 <link rel="icon" href="/iconx32.png" />
-<link rel="stylesheet" href="/global.css" />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link
 	rel="alternate"
@@ -31,12 +29,12 @@ const { title, description, image } = Astro.props;
 />
 <meta name="generator" content={Astro.generator} />
 
-<!-- Fonts -->
+<!-- Fonts: Source Serif 4 for editorial, Inter for UI, JetBrains Mono for code -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
 	rel="stylesheet"
-	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500&display=swap"
 />
 
 <!-- Canonical URL -->
@@ -61,4 +59,4 @@ const { title, description, image } = Astro.props;
 <meta property="twitter:description" content={description} />
 {image && <meta property="twitter:image" content={new URL(image.src, Astro.url)} />}
 
-<meta name="theme-color" content="#05060a" />
+<meta name="theme-color" content="#faf7f2" />

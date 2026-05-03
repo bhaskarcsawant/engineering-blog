@@ -2,46 +2,72 @@
 const today = new Date();
 ---
 
-<footer>
+<footer class="site-footer">
 	<div class="shell">
-		<div class="links">
+		<div class="brand-row">
+			<img class="brand-mark" src="/logo-black.png" alt="Emitrr" />
+			<span class="wordmark">Emitrr Engineering</span>
+		</div>
+		<nav class="links" aria-label="Footer">
 			<a href="https://emitrr.com" target="_blank" rel="noreferrer">Product</a>
 			<a href="https://www.linkedin.com/company/emitrr/" target="_blank" rel="noreferrer">Careers</a>
-		</div>
-		<span class="muted">© {today.getFullYear()} Emitrr Engineering</span>
+		</nav>
+		<span class="muted">© {today.getFullYear()} Emitrr</span>
 	</div>
 </footer>
 
 <style>
-	footer {
-		border-top: var(--border);
-		background: #f8f9fb;
+	.site-footer {
+		border-top: 1px solid var(--line);
+		background: var(--bg);
+		margin-top: 4rem;
 	}
 	.shell {
 		width: min(100%, var(--max-width));
 		margin: 0 auto;
-		padding: 1.2rem 1.5rem;
+		padding: 1.6rem 1.5rem;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
-		font-size: 0.95rem;
+		gap: 1.25rem;
+		font-family: var(--font-sans);
+		font-size: 14px;
+	}
+	.brand-row {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+	}
+	.brand-mark {
+		width: 22px;
+		height: 22px;
+		border-radius: 4px;
+	}
+	.wordmark {
+		font-family: var(--font-sans);
+		font-weight: 800;
+		font-size: 1.1rem;
+		color: var(--ink);
 	}
 	.links {
 		display: inline-flex;
 		gap: 1.25rem;
-		font-weight: 600;
+		font-weight: 500;
 	}
 	.links a {
+		color: var(--ink-muted);
+	}
+	.links a:hover {
 		color: var(--ink);
 	}
 	.muted {
-		color: var(--muted);
+		color: var(--ink-faint);
 	}
-	@media (max-width: 640px) {
+	@media (max-width: 720px) {
 		.shell {
 			flex-direction: column;
 			align-items: flex-start;
+			gap: 0.75rem;
 		}
 	}
 </style>

@@ -10,6 +10,8 @@ const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 const feature = posts[0];
+const secondary = posts.slice(1, 4);
+const archive = posts.slice(4);
 ---
 
 <!doctype html>
@@ -19,144 +21,408 @@ const feature = posts[0];
 	</head>
 	<body class="has-scrollbar">
 		<Header />
-		<main class="main-section">
+
+		<main class="home">
+			<!-- Masthead -->
+			<section class="masthead">
+				<p class="eyebrow">The journal</p>
+				<h1>Architecture notes,<br />playbooks, postmortems.</h1>
+				<p class="lede">{SITE_DESCRIPTION}</p>
+			</section>
+
+			<hr class="hairline" />
+
 			{feature && (
-				<section class="hero feature-card">
-					{feature.data.previewHeroImage ? (
-						<img class="feature-img" src={feature.data.previewHeroImage.src} alt={feature.data.title} loading="lazy" />
-					) : (
-						<img class="feature-img" src="/iconx32Colored.png" alt="" loading="lazy" />
-					)}
+				<section class="feature">
+					<a class="feature-media" href={`/blog/${feature.id}/`} aria-label={feature.data.title}>
+						{feature.data.previewHeroImage ? (
+							<img src={feature.data.previewHeroImage.src} alt="" loading="lazy" />
+						) : (
+							<div class="feature-media-fallback" aria-hidden="true"></div>
+						)}
+					</a>
 					<div class="feature-body">
-						<p class="feature-date"><FormattedDate date={feature.data.pubDate} /></p>
-						<h1>{feature.data.title}</h1>
-						<p class="lede">{feature.data.description}</p>
-						<a class="cta" href={`/blog/${feature.id}/`}>Read More</a>
+						<p class="card-eyebrow">
+							{feature.data.category ?? 'Featured'} <span class="dot">·</span>
+							<FormattedDate date={feature.data.pubDate} />
+						</p>
+						<h2><a href={`/blog/${feature.id}/`}>{feature.data.title}</a></h2>
+						<p class="feature-dek">{feature.data.description}</p>
+						<a class="read-link" href={`/blog/${feature.id}/`}>Read the piece →</a>
 					</div>
 				</section>
 			)}
+
+			{secondary.length > 0 && (
+				<>
+					<div class="section-divider" role="separator" aria-hidden="true">
+						<span class="rule"></span>
+						<span class="dot-mark"></span>
+						<span class="rule"></span>
+					</div>
+					<section class="secondary">
+						{secondary.map((post) => (
+							<a class="card" href={`/blog/${post.id}/`}>
+								<div class="card-media">
+									{post.data.previewHeroImage ? (
+										<img src={post.data.previewHeroImage.src} alt="" loading="lazy" />
+									) : (
+										<div class="card-media-fallback" aria-hidden="true"></div>
+									)}
+								</div>
+								<p class="card-eyebrow">
+									{post.data.category ?? 'Engineering'} <span class="dot">·</span>
+									<FormattedDate date={post.data.pubDate} />
+								</p>
+								<h3>{post.data.title}</h3>
+								<p class="card-dek">{post.data.description}</p>
+							</a>
+						))}
+					</section>
+				</>
+			)}
+
+			{archive.length > 0 && (
+				<section class="archive">
+					<p class="eyebrow">Continue reading</p>
+					<ul>
+						{archive.map((post) => (
+							<li>
+								<a href={`/blog/${post.id}/`}>
+									<span class="archive-title">{post.data.title}</span>
+									<span class="archive-meta">
+										{post.data.category ?? 'Engineering'} <span class="dot">·</span>
+										<FormattedDate date={post.data.pubDate} />
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+
+			<aside class="newsletter-strip" aria-label="Newsletter">
+				<div class="newsletter-card">
+					<div class="newsletter-copy">
+						<p class="newsletter-eyebrow">The engineering letter</p>
+						<h2>Deep-dive. No fluff.</h2>
+						<p class="newsletter-sub">Architecture notes, playbooks, and postmortems from the team building Emitrr's communications stack.</p>
+					</div>
+					<div class="newsletter-form">
+						<script src="https://js.hsforms.net/forms/embed/5415045.js" defer></script>
+						<div class="hs-form-frame" data-region="na1" data-form-id="ab15e5d8-bac1-46a4-8ce9-0c053ac23074" data-portal-id="5415045"></div>
+					</div>
+				</div>
+			</aside>
 		</main>
-		<section class="news-section">
-		<div class="newsletter">
-		<script src="https://js.hsforms.net/forms/embed/5415045.js" defer></script>
-		<div class="hs-form-frame" data-region="na1" data-form-id="ab15e5d8-bac1-46a4-8ce9-0c053ac23074" data-portal-id="5415045"></div>
-		</div>
-		</section>
+
 		<Footer />
+
+		<style>
+			.home {
+				display: flex;
+				flex-direction: column;
+				gap: 2.75rem;
+			}
+
+			/* Masthead */
+			.masthead {
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+				padding: 1rem 0 0;
+				margin-bottom: 0.5rem;
+			}
+			.masthead .eyebrow {
+				margin: 0;
+			}
+			.masthead h1 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 800;
+				font-size: clamp(2.4rem, 5.5vw, 4rem);
+				line-height: 1.05;
+				letter-spacing: -0.015em;
+				color: var(--ink-strong);
+			}
+			.lede {
+				margin: 0.25rem 0 0;
+				max-width: 38rem;
+				font-family: var(--font-serif);
+				font-size: 1.2rem;
+				line-height: 1.5;
+				color: var(--ink-muted);
+			}
+
+			/* Feature */
+			.feature {
+				display: grid;
+				grid-template-columns: 1.15fr 1fr;
+				gap: 2.25rem;
+				align-items: center;
+				margin-top: 1.5rem;
+			}
+			.feature-media {
+				display: block;
+				border-radius: var(--radius-lg);
+				overflow: hidden;
+				background: var(--surface-sunk);
+			}
+			.feature-media img {
+				width: 100%;
+				height: 100%;
+				max-height: 460px;
+				object-fit: cover;
+				display: block;
+			}
+			.feature-media-fallback {
+				width: 100%;
+				aspect-ratio: 5/4;
+				background: var(--surface-sunk);
+			}
+			.feature-body {
+				display: flex;
+				flex-direction: column;
+				gap: 0.85rem;
+			}
+			.feature-body h2 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 800;
+				font-size: clamp(1.8rem, 3vw, 2.4rem);
+				line-height: 1.1;
+				letter-spacing: -0.01em;
+				color: var(--ink-strong);
+			}
+			.feature-body h2 a {
+				color: inherit;
+			}
+			.feature-body h2 a:hover {
+				color: var(--accent-ink);
+			}
+			.feature-dek {
+				margin: 0;
+				font-family: var(--font-serif);
+				font-size: 1.1rem;
+				line-height: 1.55;
+				color: var(--ink-muted);
+			}
+			.read-link {
+				margin-top: 0.4rem;
+				align-self: flex-start;
+				font-family: var(--font-sans);
+				font-weight: 600;
+				font-size: 14px;
+				color: var(--ink);
+				border-bottom: 1.5px solid var(--accent);
+				padding-bottom: 2px;
+			}
+			.read-link:hover {
+				color: var(--accent-ink);
+			}
+
+			/* Sleek section divider — short rule, brand dot, short rule */
+			.section-divider {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 1rem;
+				padding: 1.25rem 0;
+				margin: 0.5rem auto 0.25rem;
+				width: 100%;
+				max-width: 22rem;
+			}
+			.section-divider .rule {
+				flex: 1;
+				height: 1px;
+				background: var(--line-strong);
+			}
+			.section-divider .dot-mark {
+				width: 5px;
+				height: 5px;
+				border-radius: 50%;
+				background: var(--accent);
+				flex-shrink: 0;
+			}
+
+			/* Card eyebrow shared */
+			.card-eyebrow {
+				margin: 0;
+				font-family: var(--font-sans);
+				font-size: var(--eyebrow-size);
+				font-weight: 600;
+				letter-spacing: var(--eyebrow-tracking);
+				text-transform: uppercase;
+				color: var(--ink-faint);
+				display: inline-flex;
+				gap: 0.4rem;
+				align-items: center;
+			}
+			.card-eyebrow .dot,
+			.archive-meta .dot {
+				color: var(--ink-faint);
+			}
+
+			/* Secondary cards */
+			.secondary {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 1.75rem;
+			}
+			.card {
+				display: flex;
+				flex-direction: column;
+				gap: 0.55rem;
+				color: var(--ink);
+				transition: transform 160ms ease;
+			}
+			.card:hover {
+				transform: translateY(-2px);
+			}
+			.card-media {
+				width: 100%;
+				aspect-ratio: 4/3;
+				border-radius: var(--radius-md);
+				overflow: hidden;
+				background: var(--surface-sunk);
+				margin-bottom: 0.4rem;
+			}
+			.card-media img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				display: block;
+			}
+			.card-media-fallback {
+				width: 100%;
+				height: 100%;
+				background: var(--surface-sunk);
+			}
+			.card h3 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 700;
+				font-size: 1.15rem;
+				line-height: 1.25;
+				color: var(--ink-strong);
+				letter-spacing: -0.005em;
+			}
+			.card-dek {
+				margin: 0;
+				font-family: var(--font-sans);
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-muted);
+			}
+
+			/* Archive list */
+			.archive {
+				display: flex;
+				flex-direction: column;
+				gap: 0.85rem;
+			}
+			.archive .eyebrow {
+				margin: 0;
+			}
+			.archive ul {
+				list-style: none;
+				padding: 0;
+				margin: 0.5rem 0 0;
+				border-top: 1px solid var(--line);
+			}
+			.archive li {
+				border-bottom: 1px solid var(--line);
+			}
+			.archive li a {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 1rem;
+				padding: 0.95rem 0;
+				color: var(--ink);
+				transition: color 120ms ease;
+			}
+			.archive li a:hover {
+				color: var(--accent-ink);
+			}
+			.archive-title {
+				font-family: var(--font-display);
+				font-weight: 700;
+				font-size: 1.05rem;
+				color: var(--ink-strong);
+			}
+			.archive-meta {
+				font-family: var(--font-sans);
+				font-size: 12px;
+				color: var(--ink-faint);
+				letter-spacing: 0.04em;
+				text-transform: uppercase;
+				white-space: nowrap;
+			}
+
+			/* Newsletter strip ─────────────────────────────────── */
+			.newsletter-strip {
+				margin-top: 5rem;
+			}
+			.newsletter-card {
+				background: var(--surface);
+				border: 1px solid var(--line-strong);
+				border-radius: var(--radius-lg);
+				padding: 2rem 1.75rem 1rem;
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+			}
+			.newsletter-eyebrow {
+				margin: 0;
+				font-family: var(--font-sans);
+				font-size: var(--eyebrow-size);
+				font-weight: 600;
+				letter-spacing: var(--eyebrow-tracking);
+				text-transform: uppercase;
+				color: var(--accent);
+			}
+			.newsletter-card h2 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 800;
+				font-size: 1.5rem;
+				line-height: 1.2;
+				color: var(--ink-strong);
+			}
+			.newsletter-sub {
+				margin: 0;
+				font-family: var(--font-sans);
+				color: var(--ink-muted);
+				font-size: 14px;
+				line-height: 1.5;
+			}
+			.newsletter-form {
+				margin-top: 0.4rem;
+			}
+
+			@media (max-width: 900px) {
+				.feature {
+					grid-template-columns: 1fr;
+				}
+				.secondary {
+					grid-template-columns: repeat(2, 1fr);
+				}
+			}
+
+			@media (max-width: 640px) {
+				.secondary {
+					grid-template-columns: 1fr;
+				}
+				.archive li a {
+					flex-direction: column;
+					align-items: flex-start;
+					gap: 0.25rem;
+				}
+				.newsletter-card {
+					padding: 1.25rem 1.1rem 0.75rem;
+				}
+			}
+		</style>
 	</body>
-
-	<style>
-		.hero {
-			display: grid;
-			grid-template-columns: 1.3fr 1fr;
-			gap: 2.4rem;
-			align-items: center;
-			margin-bottom: 3rem;
-			margin-top: 40px;
-		}
-
-		.news-section{
-			width: 100%;
-			background: #fff;
-			background: #d300ff0f;
-			background: #00000012;
-			border-top: 1px solid black;
-			border-bottom: 1px solid black;
-			padding: 10px 0px;
-		}
-
-		.newsletter {
-			max-width: 780px;
-			width: 100%;
-			margin: 3rem auto 4rem;
-			padding: 4px;
-			border: 1.5px solid #0b0f14;
-			border-radius: 14px;
-			box-shadow: 0 18px 40px rgba(0, 0, 0, 0.06);
-			background: #fff;
-		}
-
-		.newsletter .hs-form-frame {
-			display: block;
-			width: 100%;
-		}
-
-		.feature-card {
-			text-decoration: none;
-		}
-
-		.feature-img {
-			width: 100%;
-			height: 420px;
-			object-fit: cover;
-			border-radius: 10px;
-		}
-
-		.feature-body h1 {
-			font-size: 3rem;
-			margin: 2rem 0 0.7rem;
-			line-height: 1.1;
-		}
-
-		.feature-body {
-			display: flex;
-			flex-direction: column;
-			height: 100%;
-			justify-content: center;
-			gap: 0.8rem;
-		}
-
-		.feature-date {
-			margin: 0;
-			color: #5a6472;
-			font-weight: 600;
-			letter-spacing: 0.01em;
-		}
-
-		.lede {
-			font-family: 'Funnel Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
-			font-size: 20px;
-			color: #5a6472;
-			line-height: 1.65;
-			margin: 0 0 1.4rem;
-			margin-top: 10px;
-		}
-
-		.cta {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			padding: 0.6rem;
-			width: 140px;
-			border-radius: 10px;
-			color: #0b0f14;
-			border: 1.5px solid #0b0f14;
-			font-weight: 800;
-			font-size: 15px;
-			text-decoration: none;
-			letter-spacing: 0.01em;
-			transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
-			margin-top: auto;
-		}
-
-	
-
-		.cards .card {
-			text-decoration: none;
-		}
-
-		@media (max-width: 900px) {
-			.hero {
-				grid-template-columns: 1fr;
-			}
-			.feature-img {
-				height: 260px;
-			}
-
-			.newsletter {
-				padding: 1.25rem 1rem;
-				margin: 2rem auto 3rem;
-			}
-		}
-	</style>
 </html>
