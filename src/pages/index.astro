@@ -9,9 +9,12 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
-const feature = posts[0];
-const secondary = posts.slice(1, 4);
-const archive = posts.slice(4);
+// Pinned feature: any post with `featured: true` wins; otherwise newest.
+const featuredIdx = posts.findIndex((p) => p.data.featured);
+const feature = featuredIdx >= 0 ? posts[featuredIdx] : posts[0];
+const rest = posts.filter((p) => p.id !== feature?.id);
+const secondary = rest.slice(0, 3);
+const archive = rest.slice(3);
 ---
 
 <!doctype html>

@@ -21,6 +21,7 @@ const blog = defineCollection({
 			authorImage: z.union([image(), z.array(image())]).optional(),
 			authorDesignation: z.union([z.string(), z.array(z.string())]).optional(),
 			category: z.string().optional(),
+			featured: z.boolean().optional(),
 		}),
 });
 
