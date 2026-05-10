@@ -1,0 +1,209 @@
+---
+title: "Necrozma: High-performance outbound SMS throttler"
+description: "A Go service that keeps outbound SMS and MMS under the provider's rate limits, fairly across every account and campaign."
+authorName:
+  - "Darshan Hihoriya"
+  - "Bhaskar Sawant"
+authorDesignation:
+  - "Engineering"
+  - "Engineering"
+authorImage:
+  - "../../assets/blog-3/darshan.jpeg"
+  - "../../assets/blog-2/bhaskar.png"
+category: "Engineering"
+pubDate: "2026-05-09"
+previewHeroImage: "../../assets/blog-3/necrozma-hero.png"
+---
+
+Sending an SMS looks like a one-line API call. You POST a payload to your provider, get back a message ID, and you're done. That works fine until you start sending a lot of messages for a lot of customers. Then the question changes from "how do I send a message?" to "how do I send the next ten thousand without any of them getting rejected?"
+
+Necrozma is a small Go service that sits between every other Emitrr microservice and our SMS provider. Anything that wants to send an SMS or MMS goes through it. Its job: take all the messages we want to send, slow them down to a speed the provider will accept, and split that capacity fairly across hundreds of accounts that each have their own limits.
+
+## Problems
+
+**rate limits**
+
+The provider doesn't have just one limit. Every account has a cap on how many messages it can send per second. On top of that, every 10DLC campaign under that account has its own per-minute cap that the carriers enforce. Go over either one and the message comes back as a 429 — or worse, gets silently dropped later in the chain.
+
+**counting segments**
+
+A long SMS isn't one message. GSM-7 fits 160 characters in one segment; UTF-16 (anything with an emoji or accented character) fits 70. Anything longer gets split into multiple segments, and the carrier counts each segment against your sending limit. A 480-character GSM message isn't one message — it's three. If your rate limiter doesn't count segments, your math is wrong from the first call.
+
+**duplicate sends**
+
+A workflow retries. An automation misfires. A campaign gets re-queued. At our volume, somebody, somewhere will try to send the same message twice within seconds. Necrozma needs to catch that, so we don't pay the provider twice or send the customer two copies.
+
+**multiple accounts**
+
+We don't run on one account. Each account has its own API key, its own per-second limit, and its own set of campaigns. Limits have to be tracked per account — one account getting busy shouldn't slow down another.
+
+**fair sharing between campaigns**
+
+Inside one account, a customer sending a 50,000-message broadcast shouldn't block a small clinic sending appointment reminders. Every campaign that has messages to send needs a turn.
+
+## Architecture
+
+The path of one message is easy to describe. A service inside Emitrr POSTs to `/enqueue`. Necrozma checks the payload, looks for duplicates, decides whether to send it as an MMS instead (more on that below), figures out which provider account owns the sending number, and adds it to the right per-campaign queue. A pool of workers — one pool per provider account, split between SMS and MMS — pulls messages from those queues at the speed the provider allows and makes the actual API call.
+
+```
+Caller service
+   → POST /enqueue
+   → Check payload + Shield (dedup)
+   → Count segments + decide SMS or MMS
+   → Per-account, per-campaign queue (Redis)
+   → Workers (rate + concurrency limited)
+   → Provider API
+```
+*One message, from enqueue to the provider.*
+
+> **Insight**
+> Adding a message to the queue is fast. Sending it is slow and can fail in a dozen ways. Every other design choice in Necrozma comes from keeping those two steps separate. The enqueue handler returns `202 Accepted` in a few milliseconds; whether the message actually goes out five seconds later is the worker's problem.
+
+## Shield: catching duplicates
+
+Before a message reaches a queue, it goes through a component called Shield. Shield keeps a small in-memory map of recently-seen message hashes — SHA-1 over the sorted list of recipients, the message text, and the sorted list of media URLs. If the same hash shows up more than `maxAttempts` times in a short window, Shield rejects the request with 429.
+
+This isn't a security feature. It's a "we know our own services well enough not to trust them" feature. A retry storm, an automation bug, a campaign that gets re-fired — all of these get caught here before they cost us a single message.
+
+```go
+func (m *Message) Hash() [20]byte {
+  hasher := sha1.New()
+
+  toNumbers := append([]string{}, m.To...)
+  sort.Strings(toNumbers)
+  for _, n := range toNumbers { hasher.Write([]byte(n)) }
+
+  hasher.Write([]byte(m.Text))
+
+  media := append([]string{}, m.Media...)
+  sort.Strings(media)
+  for _, u := range media { hasher.Write([]byte(u)) }
+
+  var h [20]byte
+  copy(h[:], hasher.Sum(nil))
+  return h
+}
+```
+
+Sorting matters. Two requests with the same recipients in different orders need to produce the same hash. Otherwise you can break dedup just by shuffling the recipient list.
+
+## Sending long SMS as MMS
+
+Here's a quirk of how the carriers work: 10DLC campaigns are limited by segments per second. A 5-segment SMS uses up five times as much of your campaign limit as a single-segment SMS. MMS, on the other hand, runs on a separate (and usually higher) limit and counts as one message no matter how long it is.
+
+So inside the enqueue handler, if a message is text-only and the segment count is over a set threshold, Necrozma rewrites it. It saves the text in Redis under the message ID with a TTL, and repackages the message as an MMS whose only "media" attachment is a URL pointing back at Necrozma's own `/segments/:id` endpoint. When the provider fetches the URL to render the MMS, Necrozma serves back the original text as `text/plain`.
+
+```go
+segments := smslength.Count(message.Text)
+if segments > config.ConvertToMMSAfterSegments && len(message.Media) == 0 {
+  h.redis.SetEx(ctx, message.Id, message.Text, config.TTLMMSText)
+
+  message.Text = ""
+  message.Media = append(message.Media, c.BaseURL()+"/segments/"+message.Id)
+}
+```
+
+The customer sees a slightly different-looking message on their phone, but it goes out under MMS limits instead of hitting the 10DLC segment cap. From their side, the result is the same — the message arrives.
+
+## Fair queueing
+
+This is where most of the work happens. Once a message is past Shield and counted, the controller picks the right queue from a per-account map (each provider account has its own SMS queue and MMS queue) and adds the message under the campaign that owns the sending number.
+
+Each queue is built from two Redis data structures:
+
+- A **sorted set per campaign**, holding the encoded messages, scored by priority. Lower score = higher priority, so `ZPOPMIN` always gives back the most important message first.
+- A **single sorted set per queue** holding the campaign rotation pointer. Campaigns are scored by "last served" — the campaign with the lowest score is the one that's been waiting longest.
+
+On every dequeue, Necrozma asks: which campaign is up next? It does this with a small Lua script that runs as one atomic step: read the campaign with the lowest score, then re-score it to `max + 1` so it goes to the back of the line.
+
+```lua
+-- nextCampaignScript
+local campaigns = redis.call('ZRANGE', KEYS[1], 0, 0, 'WITHSCORES')
+if #campaigns == 0 then return false end
+
+local campaign_id = campaigns[1]
+local max_score = redis.call('ZRANGE', KEYS[1], -1, -1, 'WITHSCORES')[2]
+redis.call('ZADD', KEYS[1], max_score + 1, campaign_id)
+return campaign_id
+```
+
+It's strict round-robin, not weighted. Every active campaign gets one slot per rotation. A campaign with 50,000 messages doesn't get more turns than one with two — the big campaign just stays in the rotation longer.
+
+The encoded message looks like `<19-char nanosecond timestamp><message JSON><6-char zero-padded segment count>`. The timestamp helps with ordering and slow-log debugging. The segment count sits at the end so the dequeue script can read it without parsing the JSON.
+
+## Rate limiting that counts segments
+
+Picking the next campaign is the easy part. The hard part is doing the rate-limit check, the pop, and the budget update as one atomic step — otherwise two workers can both decide there's room for one more message and both send.
+
+The dequeue logic enforces two limits at the same time: a per-campaign rate (set per minute, based on the campaign limits we sync from the API) and a global per-second rate for the whole account. Both are stored as Redis counters with TTLs — a sliding-window approximation that's good enough at this scale and easy to keep atomic.
+
+```lua
+-- dequeueMessage (abbreviated)
+
+-- 1. Stop early if the per-campaign budget is already used up
+local remaining = redis.call('GET', KEYS[3])
+if remaining and tonumber(remaining) <= 0 then return false end
+
+-- 2. Pop the highest-priority message off this campaign's queue
+local messages = redis.call('ZPOPMIN', KEYS[1], 1)
+if #messages == 0 then
+  redis.call('ZREM', KEYS[2], ARGV[1])  -- campaign empty, drop from rotation
+  return false
+end
+
+local message = messages[1]
+local length  = tonumber(string.sub(message, -6))    -- segment count
+local content = string.sub(message, 20, -7)          -- the JSON payload
+
+-- 3. Check the global per-second budget; put the message back if it doesn't fit
+local global = redis.call('GET', KEYS[4])
+if not global then
+  redis.call('SET', KEYS[4], tonumber(ARGV[3]) - length, 'PX', 1000)
+elseif tonumber(global) < length then
+  redis.call('ZADD', KEYS[1], messages[2], message)  -- requeue
+  return false
+else
+  redis.call('DECRBY', KEYS[4], length)
+end
+
+-- 4. Same check for the per-campaign minute budget
+if not remaining then
+  redis.call('SET', KEYS[3], tonumber(ARGV[2]) - length, 'EX', 60)
+else
+  if tonumber(remaining) < length then
+      redis.call('ZADD', KEYS[1], messages[2], message)
+      return false
+  end
+  redis.call('DECRBY', KEYS[3], length)
+end
+
+return content
+```
+
+Three things worth pointing out:
+
+1. **The script counts segments, not messages.** It calls `DECRBY` with `length`, not 1. A 4-segment SMS uses up four units of the budget. This is the only correct way to track a limit when the carrier charges per segment.
+2. **Put the message back if it doesn't fit.** If we pop a message and find we can't afford it under the global budget, we put it back at its original score (`messages[2]`) so it stays at the front of the queue. The next worker tick tries again — possibly with a fresh budget window.
+3. **Empty campaigns get cleaned up.** When a campaign queue runs out of messages, the script removes it from the rotation set. It gets added back the next time someone enqueues for it.
+
+## Workers
+
+SMS and MMS have different processing speeds, different rate limits, and different ways they fail. Necrozma keeps them on separate queues with their own worker pools. The size of each pool comes from the configured throughput target divided by an estimated average API response time (currently 150 ms), then rounded up:
+
+```go
+func calcWorkerNum(mps int) int {
+  avgProcessingTime := 150 // ms; revisit if provider response time changes
+  perWorker := 1000.0 / float64(avgProcessingTime)
+  return int(math.Ceil(float64(mps) / perWorker))
+}
+```
+
+We deliberately run more workers than the math says we need. The 150 ms figure is an average — when the provider has a slow minute and API calls start taking 500 ms, workers sized for the average get stuck waiting on responses, and the queue backs up because nobody's left to pull from it. Extra workers are cheap insurance: when the provider is fast, they just sleep at the rate limiter; when the provider is slow, they pick up the slack.
+
+<div class="dot-divider" aria-hidden="true">· · ·</div>
+
+Necrozma has been the only path between Emitrr and our SMS provider for outbound SMS and MMS for a long time now. It handles upstream retries, keeps us under every limit the provider enforces, and gives every campaign a turn at the wire.
+
+If there's one takeaway from working on this, it's that the interesting problems rarely show up where you first expect them. The provider's documented per-second limit is the first thing you read; how that limit interacts with segments, with campaigns, with multiple accounts, and with upstream services that occasionally lose their minds — that's where the actual engineering happens.
+
+We're a small team building infrastructure for business communications. If problems like this — distributed scheduling, telephony, multi-tenant systems — are what you want to work on, we're hiring.
