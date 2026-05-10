@@ -1,0 +1,175 @@
+---
+title: "Echo: how we built bulk calling that doesn't fall apart"
+description: "How Emitrr's Echo system solves rate limiting, concurrency, and multi-tenant fairness for bulk calling at scale — and what the code actually does."
+authorName:
+  - "Param Saluja"
+  - "Bhaskar Sawant"
+authorDesignation:
+  - "Engineering"
+  - "Engineering"
+authorImage:
+  - "../../assets/blog-2/param.jpg"
+  - "../../assets/blog-2/bhaskar.png"
+category: "Infrastructure & Telephony"
+pubDate: "2026-05-01"
+previewHeroImage: "../../assets/blog-2/echo_hero_image.svg"
+---
+
+import Callout from "../../components/Callout.astro";
+import Diagram from "../../components/Diagram.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+import DownloadFile from "../../components/DownloadFile.astro";
+
+
+Bulk calling is one of those things that looks simple until you're actually doing it at scale.
+You have a list of contacts, you want to place calls — outreach campaigns, reminders, follow-ups.
+What's the hard part?
+
+Turns out: a lot. When you're running this for dozens of customers at the same time, you run into
+rate limits, bursty workloads, and the fairness problem of multiple tenants competing for the same
+calling capacity. Before Echo, bulk calling at Emitrr wasn't automated in any real sense. Customers
+had to manage it manually or through one-off scripts. Echo changed that.
+
+---
+
+## The three problems we needed to solve
+
+**Rate limits.** Our telephony provider (Bandwidth) enforces hard limits on calls per second.
+Exceed them and calls fail.
+
+**Concurrency and rate limiting are different things.** Even if you're within the per-second limit,
+hammering FreeSWITCH or the SIP layer with sudden bursts causes its own problems — dropped
+connections, timeouts, resource exhaustion. You need to control both independently.
+
+**Fairness across accounts matters.** If one customer queues 8,000 calls and another queues 100,
+the smaller account shouldn't sit idle for hours.
+
+---
+
+## How Echo is structured
+
+The system is four things in sequence. A workflow inside Emitrr's Workflows triggers a "make a call"
+action which posting to Echo's `/voice/enqueue` endpoint. Echo validates it and produces a call task.
+That task goes into a Redis-backed fair queue. Workers pull from the queue, respect rate limits, and
+fire ESL commands at FreeSWITCH — which hands off to Bandwidth to actually ring someone's phone.
+
+<Diagram
+  caption="The call path from workflow trigger to end user."
+  nodes={[
+    "Emitrr Workflow (workflow_call.js)",
+    "Echo API (/voice/enqueue)",
+    "Validate + Enqueue",
+    "Fair Queue (Redis)",
+    "Workers (rate-limited)",
+    "FreeSWITCH → Bandwidth",
+  ]}
+/>
+
+<Callout type="insight">
+  **The most important decision here is the separation between enqueue and execute.** Enqueueing a
+  task is fast and doesn't fail. Actually placing a call is slow, depends on external systems, and
+  can fail in a dozen ways. Decoupling them means a sudden burst of incoming jobs doesn't translate
+  directly into a burst of failed calls.
+</Callout>
+
+---
+
+## The fair queue
+
+This is where most of the real work lives. If you only had one customer, a simple FIFO queue would
+be fine. But with many accounts producing tasks at different rates, you need a proper scheduler.
+
+Echo uses **per-account queues in Redis**, with a dequeue layer that implements **round-robin
+scheduling** across active accounts. Here's the basic idea:
+
+- Each account has its own queue in Redis — a sorted set keyed by account ID, with tasks ordered by time.
+- The scheduler maintains a rotation pointer that cycles through active accounts. On each dequeue
+  tick, it picks the next account in rotation and pulls one task.
+- If an account's queue is empty, it's skipped. Available capacity flows to whoever has work.
+
+The dequeue logic — picking the next account, popping one task, advancing the pointer — is
+implemented as a **single atomic Lua script** on the Redis side, so no two workers can ever claim
+the same task.
+
+<Callout type="warning">
+  **Current implementation note:** The scheduler uses plain round-robin — each account gets one
+  slot per rotation cycle.
+</Callout>
+
+**The key property: no account monopolizes the queue.** A large account with thousands of queued
+calls won't starve out a small account with a handful. Every active account gets its turn.
+
+### Why Redis for this?
+
+- Redis sorted sets give you **O(log N)** insert and dequeue per account.
+- The entire scheduler state — queue contents, the rotation pointer — lives in Redis, so it's
+  shared across workers.
+- Any worker can dequeue from any account's queue, which is what makes horizontal scaling work cleanly.
+
+---
+
+## Rate limiting vs. concurrency
+
+These two concepts often get confused. Echo treats them as **separate dials**.
+
+### Rate limiting
+
+Enforced **globally across all workers** via a sliding window in Redis. We track call initiations
+over a **1-second window** and enforce a ceiling configured via `ECHO_VOICE_RPS` (defaults to
+**8 calls/sec**). If you scale to 10 workers, they collectively still respect the same ceiling —
+the shared Redis state ensures this.
+
+<CodeBlock language="bash">
+{`# Configurable via environment variable
+ECHO_VOICE_RPS=8   # calls per second ceiling, global across all workers`}
+</CodeBlock>
+
+### Concurrency control
+
+A **separate check**, independent of rate limiting. Before dequeuing a new task, workers read
+`echo:active:calls:count`. If active in-flight calls are at the ceiling, no new task is pulled —
+regardless of what the rate limiter says.
+
+- **Incremented** when a call is successfully initiated (Echo side).
+- **Decremented** when the call-log handler on the API side processes the outcome.
+
+These are genuinely different constraints:
+
+| Concern | Mechanism | Enforced by |
+|---|---|---|
+| Provider burst protection | Sliding window (1s) in Redis | Rate limiter |
+| FreeSWITCH / SIP overload | `echo:active:calls:count` | Concurrency check |
+---
+If you want the actual implementation — the Lua scripts, the worker loop, the rate limiter and
+concurrency check wired together — here's the full TypeScript class we run in production.
+
+<DownloadFile
+  href="/downloads/concurrency-queue.ts"
+  filename="concurrency-queue.ts"
+  label="concurrency-queue.ts"
+  description="TypeScript · Echo dispatcher with fair queue, rate limit, and concurrency control"
+/>
+
+---
+## Where things stand
+
+Echo makes bulk calling a first-class workflow in Emitrr instead of something customers have to
+manage themselves. Fairness and rate limiting work correctly in production across multiple accounts.
+The horizontal scaling story is clean — add workers, get faster backlog drain, rate limits stay
+respected.
+
+There's still work to do:
+
+- **Retry logic and dead-letter handling** for failed calls is an area we're actively iterating on.
+- **Priority-weighted scheduling** — upgrading from plain round-robin to weight-based rotation per
+  account tier is on the roadmap.
+
+If you're building multi-tenant "bulk anything" systems, the core lesson is the same as it's always
+been: fair scheduling and strict rate limiting are what separate something that works in staging
+from something that works in production. The implementation is never as simple as it first looks.
+
+---
+
+*We're a small team working on infrastructure for business communications. If problems like this —
+distributed scheduling, telephony, multi-tenant systems — are the kind of work you want to do,
+[we're hiring](https://emitrr.com/careers).*

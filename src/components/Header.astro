@@ -1,0 +1,87 @@
+---
+---
+
+<header class="site-header">
+	<div class="site-shell">
+		<a class="site-brand" href="/">
+			<img class="brand-mark" src="/logo-black.png" alt="Emitrr" />
+			<span class="wordmark">Emitrr Engineering</span>
+		</a>
+		<nav class="site-nav" aria-label="Primary">
+			<a href="https://emitrr.com" target="_blank" rel="noreferrer">Product</a>
+			<a href="https://www.linkedin.com/company/emitrr/" target="_blank" rel="noreferrer">Careers</a>
+		</nav>
+	</div>
+</header>
+
+<style>
+	.site-header {
+		position: sticky;
+		top: 0;
+		z-index: 30;
+		width: 100%;
+		background: var(--bg);
+		border-bottom: 1px solid var(--line);
+		backdrop-filter: saturate(140%) blur(6px);
+	}
+
+	.site-shell {
+		width: min(100%, var(--max-width));
+		margin: 0 auto;
+		padding: 0.95rem 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.site-brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.65rem;
+		color: var(--ink);
+	}
+
+	.brand-mark {
+		width: 25px;
+		height: 25px;
+		display: inline-block;
+	}
+
+	.wordmark {
+		font-family: var(--font-sans);
+		font-weight: 800;
+		font-size: 1.1rem;
+		letter-spacing: 0.005em;
+		line-height: 1;
+		color: var(--ink);
+	}
+
+	.site-nav {
+		display: inline-flex;
+		align-items: center;
+		gap: 1.4rem;
+		font-family: var(--font-sans);
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.site-nav a {
+		color: var(--ink-muted);
+		transition: color 120ms ease;
+	}
+
+	.site-nav a:hover {
+		color: var(--ink);
+	}
+
+	@media (max-width: 640px) {
+		.wordmark {
+			display: none;
+		}
+		.site-nav {
+			gap: 1rem;
+			font-size: 13px;
+		}
+	}
+</style>

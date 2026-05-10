@@ -1,0 +1,478 @@
+---
+import { Image } from 'astro:assets';
+import BaseHead from '../components/BaseHead.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	heroImage,
+	category,
+} = Astro.props;
+
+// Normalize each author field to an array so the layout can iterate uniformly,
+// regardless of whether the post was authored by one person or several.
+const toArray = <T,>(v: T | T[] | undefined): T[] => (v == null ? [] : Array.isArray(v) ? v : [v]);
+
+const authorNames = toArray(Astro.props.authorName);
+if (authorNames.length === 0) authorNames.push('Bhaskar Sawant');
+
+const authorImages = toArray(Astro.props.authorImage);
+const designations = toArray(Astro.props.authorDesignation);
+
+// Pair each author with their image (if provided at the same index) and designation.
+const authors = authorNames.map((name, i) => ({
+	name,
+	image: authorImages[i],
+	designation: designations[i],
+	initial: name.trim().charAt(0).toUpperCase(),
+}));
+
+// Display: "Alice", "Alice & Bob", "Alice, Bob & Carol", etc.
+const authorDisplay =
+	authors.length === 1
+		? authors[0].name
+		: authors.length === 2
+		? `${authors[0].name} & ${authors[1].name}`
+		: `${authors.slice(0, -1).map((a) => a.name).join(', ')} & ${authors[authors.length - 1].name}`;
+
+// Designation row: collapse if everyone shares one, otherwise show first or "Engineering".
+const uniqueDesignations = Array.from(new Set(designations.filter(Boolean)));
+const designationDisplay =
+	uniqueDesignations.length === 1 ? uniqueDesignations[0] : uniqueDesignations[0] ?? 'Author';
+
+const eyebrow = category ?? 'Engineering';
+---
+
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={description} />
+	</head>
+
+	<body>
+		<div class="page">
+			<Header />
+
+			<main class="article-shell">
+				<section class="title-card">
+					<p class="eyebrow">{eyebrow}</p>
+					<h1>{title}</h1>
+					<p class="dek">{description}</p>
+
+					<div class="meta-row">
+						<div class={`avatar-stack avatar-stack--${authors.length}`} aria-hidden="true">
+							{authors.map((author) => (
+								<div class="avatar">
+									{author.image ? (
+										<Image class="avatar-img" width={64} height={64} src={author.image} alt="" />
+									) : (
+										<span class="avatar-fallback">{author.initial}</span>
+									)}
+								</div>
+							))}
+						</div>
+						<div class="meta-text">
+							<p class="meta-name">{authorDisplay}</p>
+							<p class="meta-role">
+								<span>{designationDisplay}</span>
+								{pubDate && (
+									<>
+										<span class="dot">·</span>
+										<FormattedDate date={pubDate} />
+									</>
+								)}
+								{updatedDate && (
+									<>
+										<span class="dot">·</span>
+										<span>Updated <FormattedDate date={updatedDate} /></span>
+									</>
+								)}
+							</p>
+						</div>
+					</div>
+				</section>
+
+				{heroImage && (
+					<figure class="hero-image">
+						<Image width={1400} height={700} src={heroImage} alt="" />
+					</figure>
+				)}
+
+				<article class="prose">
+					<slot />
+				</article>
+
+				<aside class="newsletter-strip" aria-label="Newsletter">
+					<div class="newsletter-card">
+						<div class="newsletter-copy">
+							<p class="newsletter-eyebrow">The engineering letter</p>
+							<h2>Deep-dive. No fluff.</h2>
+							<p class="newsletter-sub">Architecture notes, playbooks, and postmortems from the team building Emitrr.</p>
+						</div>
+						<div class="newsletter-form">
+							<script src="https://js.hsforms.net/forms/embed/5415045.js" defer></script>
+							<div
+								class="hs-form-frame"
+								data-region="na1"
+								data-form-id="ab15e5d8-bac1-46a4-8ce9-0c053ac23074"
+								data-portal-id="5415045"
+							></div>
+						</div>
+					</div>
+				</aside>
+			</main>
+
+			<Footer />
+		</div>
+	</body>
+
+	<style>
+		.page {
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			background: var(--bg);
+		}
+
+		.article-shell {
+			flex: 1;
+			width: min(100%, var(--measure));
+			margin: 0 auto;
+			padding: 3.5rem 1.25rem 4rem;
+			display: flex;
+			flex-direction: column;
+			gap: 2.25rem;
+		}
+
+		.title-card {
+			text-align: left;
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.title-card .eyebrow {
+			margin: 0;
+		}
+
+		h1 {
+			margin: 0.25rem 0 0;
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: clamp(2rem, 4.4vw, 3rem);
+			line-height: 1.1;
+			letter-spacing: -0.01em;
+			color: var(--ink-strong);
+		}
+
+		.dek {
+			margin: 0.4rem 0 0.6rem;
+			font-family: var(--font-serif);
+			font-weight: 400;
+			font-size: 1.25rem;
+			line-height: 1.45;
+			color: var(--ink-muted);
+		}
+
+		.meta-row {
+			display: flex;
+			align-items: center;
+			gap: 0.85rem;
+			padding-top: 1.1rem;
+			margin-top: 0.6rem;
+			border-top: 1px solid var(--line);
+		}
+
+		.avatar-stack {
+			display: inline-flex;
+			align-items: center;
+			flex-shrink: 0;
+		}
+		.avatar-stack .avatar + .avatar {
+			margin-left: -10px;
+		}
+
+		.avatar {
+			width: 44px;
+			height: 44px;
+			border-radius: 50%;
+			background: var(--accent);
+			color: var(--bg);
+			display: grid;
+			place-items: center;
+			overflow: hidden;
+			flex-shrink: 0;
+			border: 2px solid var(--bg);
+			box-sizing: content-box;
+			position: relative;
+		}
+
+		/* Keep the first author visually on top when avatars overlap. */
+		.avatar-stack .avatar:nth-child(1) {
+			z-index: 6;
+		}
+		.avatar-stack .avatar:nth-child(2) {
+			z-index: 5;
+		}
+		.avatar-stack .avatar:nth-child(3) {
+			z-index: 4;
+		}
+		.avatar-stack .avatar:nth-child(4) {
+			z-index: 3;
+		}
+		.avatar-stack .avatar:nth-child(5) {
+			z-index: 2;
+		}
+		.avatar-stack .avatar:nth-child(6) {
+			z-index: 1;
+		}
+
+		/* Cycle accent shade per author so stacked avatars stay distinguishable. */
+		.avatar-stack .avatar:nth-child(2) {
+			background: #7a3f2c;
+		}
+		.avatar-stack .avatar:nth-child(3) {
+			background: #4a2a20;
+		}
+		.avatar-img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+			border-radius: 50%;
+		}
+		.avatar-fallback {
+			font-family: var(--font-sans);
+			font-weight: 700;
+			font-size: 16px;
+		}
+
+		.meta-text {
+			display: flex;
+			flex-direction: column;
+			gap: 0.1rem;
+			font-family: var(--font-sans);
+		}
+		.meta-name {
+			margin: 0;
+			font-weight: 600;
+			font-size: 14px;
+			color: var(--ink);
+		}
+		.meta-role {
+			margin: 0;
+			color: var(--ink-faint);
+			font-size: 13px;
+			display: inline-flex;
+			align-items: center;
+			gap: 0.4rem;
+			flex-wrap: wrap;
+		}
+		.meta-role .dot {
+			color: var(--ink-faint);
+		}
+
+		.hero-image {
+			margin: 0;
+			width: 100%;
+		}
+		.hero-image img {
+			width: 100%;
+			border-radius: var(--radius-md);
+		}
+
+		/* Editorial body — Source Serif 4 ─────────────────────── */
+		:global(.prose) {
+			font-family: var(--font-serif);
+			font-weight: 400;
+			font-size: 19px;
+			line-height: 1.75;
+			letter-spacing: -0.003em;
+			color: var(--ink);
+			margin-top: 0.5rem;
+		}
+
+		:global(.prose > p:first-of-type::first-letter) {
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: 3.4em;
+			line-height: 0.9;
+			float: left;
+			padding: 0.18em 0.12em 0 0;
+			color: var(--ink-strong);
+		}
+
+		:global(.prose p),
+		:global(.prose li) {
+			margin: 0 0 1.25rem;
+			color: var(--ink);
+		}
+
+		:global(.prose h2) {
+			margin: 2.2rem 0 0.75rem;
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: 1.6rem;
+			line-height: 1.2;
+			color: var(--ink-strong);
+			letter-spacing: -0.005em;
+		}
+
+		:global(.prose h3) {
+			margin: 1.8rem 0 0.5rem;
+			font-family: var(--font-sans);
+			font-weight: 600;
+			font-size: 1.05rem;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: var(--ink-faint);
+		}
+
+		:global(.prose a) {
+			color: var(--ink-strong);
+			text-decoration: underline;
+			text-decoration-color: var(--accent);
+			text-underline-offset: 4px;
+			text-decoration-thickness: 1.5px;
+		}
+		:global(.prose a:hover) {
+			color: var(--accent-ink);
+		}
+
+		:global(.prose blockquote),
+		:global(.prose .quote-title) {
+			margin: 1.6rem 0;
+			padding: 0.4rem 0 0.4rem 1.1rem;
+			border-left: 3px solid var(--accent);
+			font-family: var(--font-serif);
+			font-style: italic;
+			font-weight: 500;
+			font-size: 1.15rem;
+			line-height: 1.5;
+			color: var(--ink-strong);
+		}
+
+		:global(.prose img) {
+			display: block;
+			max-width: 100%;
+			height: auto;
+			margin: 2.25rem auto;
+			border-radius: var(--radius-md);
+		}
+
+		:global(.prose hr),
+		:global(.prose .dot-divider) {
+			border: 0;
+			display: flex;
+			justify-content: center;
+			gap: 0.6rem;
+			font-size: 1rem;
+			letter-spacing: 0.4rem;
+			color: var(--ink-faint);
+			margin: 2.5rem 0;
+		}
+
+		:global(.prose code) {
+			font-family: var(--font-mono);
+			font-size: 0.9em;
+			padding: 0.12em 0.35em;
+			border-radius: 4px;
+			background: var(--surface-sunk);
+			color: var(--ink-strong);
+		}
+
+		:global(.prose pre) {
+			background: var(--code-bg);
+			color: var(--code-ink);
+			padding: 1.1rem 1.25rem;
+			border-radius: var(--radius-md);
+			overflow-x: auto;
+			font-family: var(--font-mono);
+			font-size: 13.5px;
+			line-height: 1.6;
+			margin: 1.6rem 0;
+		}
+
+		:global(.prose pre code) {
+			background: transparent;
+			padding: 0;
+			color: inherit;
+			font-size: inherit;
+		}
+
+		:global(.prose ul),
+		:global(.prose ol) {
+			padding-left: 1.25rem;
+			margin: 0 0 1.25rem;
+		}
+
+		/* Newsletter strip ────────────────────────────────────── */
+		.newsletter-strip {
+			margin-top: 2.5rem;
+		}
+
+		.newsletter-card {
+			background: var(--surface);
+			border: 1px solid var(--line-strong);
+			border-radius: var(--radius-lg);
+			padding: 1.75rem 1.75rem 1rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.newsletter-eyebrow {
+			margin: 0;
+			font-family: var(--font-sans);
+			font-size: var(--eyebrow-size);
+			font-weight: 600;
+			letter-spacing: var(--eyebrow-tracking);
+			text-transform: uppercase;
+			color: var(--accent);
+		}
+
+		.newsletter-card h2 {
+			margin: 0;
+			font-family: var(--font-serif);
+			font-weight: 600;
+			font-size: 1.4rem;
+			line-height: 1.2;
+			color: var(--ink-strong);
+		}
+
+		.newsletter-sub {
+			margin: 0;
+			font-family: var(--font-sans);
+			color: var(--ink-muted);
+			font-size: 14px;
+			line-height: 1.5;
+		}
+
+		.newsletter-form {
+			margin-top: 1rem;
+		}
+
+		@media (max-width: 720px) {
+			.article-shell {
+				width: min(100%, 92vw);
+				padding: 2.25rem 1rem 3rem;
+			}
+			h1 {
+				font-size: 2rem;
+			}
+			.dek {
+				font-size: 1.1rem;
+			}
+			:global(.prose) {
+				font-size: 18px;
+			}
+			.newsletter-card {
+				padding: 1.25rem 1.1rem 0.75rem;
+			}
+		}
+	</style>
+</html>

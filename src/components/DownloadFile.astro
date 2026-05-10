@@ -1,0 +1,126 @@
+---
+interface Props {
+	href: string;          // path to the file under /public, e.g. /downloads/foo.ts
+	filename?: string;     // override the saved-as filename (defaults to last segment of href)
+	label?: string;        // primary line, e.g. "concurrency-queue.ts"
+	description?: string;  // secondary line, e.g. "TypeScript · Echo dispatcher · 8 KB"
+}
+const { href, filename, label, description } = Astro.props;
+const display = label ?? href.split('/').pop() ?? 'Download';
+---
+
+<a class="download-file" href={href} download={filename ?? true}>
+	<span class="dl-icon" aria-hidden="true">
+		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+			<polyline points="14 2 14 8 20 8"></polyline>
+		</svg>
+	</span>
+	<div class="dl-meta">
+		<p class="dl-label">{display}</p>
+		{description && <p class="dl-description">{description}</p>}
+	</div>
+	<span class="dl-cta" aria-hidden="true">
+		<span class="dl-cta-text">Download</span>
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+			<polyline points="7 10 12 15 17 10"></polyline>
+			<line x1="12" y1="15" x2="12" y2="3"></line>
+		</svg>
+	</span>
+</a>
+
+<style>
+	.download-file {
+		display: flex;
+		align-items: center;
+		gap: 0.95rem;
+		margin: 1.8rem 0;
+		padding: 0.95rem 1.1rem;
+		background: var(--surface);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-md);
+		color: var(--ink);
+		text-decoration: none;
+		transition: border-color 140ms ease, transform 140ms ease, background 140ms ease;
+	}
+
+	.download-file:hover {
+		border-color: var(--accent);
+		transform: translateY(-1px);
+		background: #fffaf6;
+	}
+
+	.dl-icon {
+		flex-shrink: 0;
+		width: 38px;
+		height: 38px;
+		border-radius: 8px;
+		background: var(--surface-sunk);
+		color: var(--accent-ink);
+		display: grid;
+		place-items: center;
+	}
+
+	.download-file:hover .dl-icon {
+		color: var(--accent);
+	}
+
+	.dl-meta {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
+	.dl-label {
+		margin: 0;
+		font-family: var(--font-mono);
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--ink-strong);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.dl-description {
+		margin: 0;
+		font-family: var(--font-sans);
+		font-size: 12.5px;
+		color: var(--ink-faint);
+		letter-spacing: 0.01em;
+	}
+
+	.dl-cta {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-family: var(--font-sans);
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--ink);
+		padding: 0.45rem 0.7rem;
+		border-radius: 8px;
+		border: 1px solid var(--line-strong);
+		background: var(--bg);
+		transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+	}
+
+	.download-file:hover .dl-cta {
+		background: var(--ink);
+		color: var(--bg);
+		border-color: var(--ink);
+	}
+
+	@media (max-width: 560px) {
+		.dl-cta-text {
+			display: none;
+		}
+		.dl-cta {
+			padding: 0.45rem 0.55rem;
+		}
+	}
+</style>

@@ -1,0 +1,80 @@
+---
+interface Props {
+	caption?: string;
+	nodes: string[];
+}
+const { caption, nodes } = Astro.props;
+---
+
+<figure class="diagram">
+	<div class="flow" role="list">
+		{nodes.map((node, i) => (
+			<>
+				<div class="node" role="listitem">{node}</div>
+				{i < nodes.length - 1 && <span class="arrow" aria-hidden="true">→</span>}
+			</>
+		))}
+	</div>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+	.diagram {
+		margin: 1.8rem 0;
+		padding: 1.2rem 1rem;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-md);
+	}
+
+	.flow {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem 0.5rem;
+	}
+
+	.node {
+		font-family: var(--font-mono);
+		font-size: 12.5px;
+		font-weight: 500;
+		padding: 0.45rem 0.75rem;
+		border-radius: 6px;
+		background: var(--bg);
+		border: 1px solid var(--line-strong);
+		color: var(--ink-strong);
+		white-space: nowrap;
+	}
+
+	.arrow {
+		font-family: var(--font-sans);
+		font-size: 14px;
+		color: var(--accent);
+		font-weight: 700;
+	}
+
+	figcaption {
+		margin-top: 0.85rem;
+		text-align: center;
+		font-family: var(--font-sans);
+		font-size: 12.5px;
+		font-style: italic;
+		color: var(--ink-faint);
+	}
+
+	@media (max-width: 640px) {
+		.flow {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.node {
+			text-align: center;
+			white-space: normal;
+		}
+		.arrow {
+			transform: rotate(90deg);
+			align-self: center;
+		}
+	}
+</style>

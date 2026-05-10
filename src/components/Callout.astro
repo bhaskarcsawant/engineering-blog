@@ -1,0 +1,76 @@
+---
+interface Props {
+	type?: 'insight' | 'warning' | 'note';
+	title?: string;
+}
+const { type = 'note', title } = Astro.props;
+const labels: Record<string, string> = {
+	insight: 'Insight',
+	warning: 'Heads up',
+	note: 'Note',
+};
+const label = title ?? labels[type] ?? labels.note;
+---
+
+<aside class={`callout callout--${type}`} role="note">
+	<p class="callout-eyebrow">{label}</p>
+	<div class="callout-body">
+		<slot />
+	</div>
+</aside>
+
+<style>
+	.callout {
+		margin: 1.6rem 0;
+		padding: 1rem 1.15rem 0.4rem;
+		border-radius: var(--radius-md);
+		background: var(--surface);
+		border: 1px solid var(--line-strong);
+		border-left-width: 3px;
+	}
+
+	.callout--insight {
+		border-left-color: var(--accent);
+	}
+
+	.callout--warning {
+		border-left-color: #b78a26;
+		background: #faf3e3;
+	}
+
+	.callout--note {
+		border-left-color: var(--ink-faint);
+	}
+
+	.callout-eyebrow {
+		margin: 0 0 0.4rem;
+		font-family: var(--font-sans);
+		font-size: var(--eyebrow-size);
+		font-weight: 700;
+		letter-spacing: var(--eyebrow-tracking);
+		text-transform: uppercase;
+		color: var(--ink-faint);
+	}
+
+	.callout--insight .callout-eyebrow {
+		color: var(--accent-ink);
+	}
+
+	.callout--warning .callout-eyebrow {
+		color: #6b4f0d;
+	}
+
+	.callout-body :global(p) {
+		margin: 0 0 0.75rem;
+		font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+		font-size: 19px;
+		line-height: 1.55;
+		letter-spacing: -0.003em;
+		color: rgba(41, 41, 41, 1);
+	}
+
+	.callout-body :global(strong) {
+		color: var(--ink-strong);
+		font-weight: 700;
+	}
+</style>

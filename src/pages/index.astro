@@ -1,0 +1,431 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+// Pinned feature: any post with `featured: true` wins; otherwise newest.
+const featuredIdx = posts.findIndex((p) => p.data.featured);
+const feature = featuredIdx >= 0 ? posts[featuredIdx] : posts[0];
+const rest = posts.filter((p) => p.id !== feature?.id);
+const secondary = rest.slice(0, 3);
+const archive = rest.slice(3);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body class="has-scrollbar">
+		<Header />
+
+		<main class="home">
+			<!-- Masthead -->
+			<section class="masthead">
+				<p class="eyebrow">The journal</p>
+				<h1>Architecture notes,<br />playbooks, postmortems.</h1>
+				<p class="lede">{SITE_DESCRIPTION}</p>
+			</section>
+
+			<hr class="hairline" />
+
+			{feature && (
+				<section class="feature">
+					<a class="feature-media" href={`/blog/${feature.id}/`} aria-label={feature.data.title}>
+						{feature.data.previewHeroImage ? (
+							<img src={feature.data.previewHeroImage.src} alt="" loading="lazy" />
+						) : (
+							<div class="feature-media-fallback" aria-hidden="true"></div>
+						)}
+					</a>
+					<div class="feature-body">
+						<p class="card-eyebrow">
+							{feature.data.category ?? 'Featured'} <span class="dot">·</span>
+							<FormattedDate date={feature.data.pubDate} />
+						</p>
+						<h2><a href={`/blog/${feature.id}/`}>{feature.data.title}</a></h2>
+						<p class="feature-dek">{feature.data.description}</p>
+						<a class="read-link" href={`/blog/${feature.id}/`}>Read the piece →</a>
+					</div>
+				</section>
+			)}
+
+			{secondary.length > 0 && (
+				<>
+					<div class="section-divider" role="separator" aria-hidden="true">
+						<span class="rule"></span>
+						<span class="dot-mark"></span>
+						<span class="rule"></span>
+					</div>
+					<section class="secondary">
+						{secondary.map((post) => (
+							<a class="card" href={`/blog/${post.id}/`}>
+								<div class="card-media">
+									{post.data.previewHeroImage ? (
+										<img src={post.data.previewHeroImage.src} alt="" loading="lazy" />
+									) : (
+										<div class="card-media-fallback" aria-hidden="true"></div>
+									)}
+								</div>
+								<p class="card-eyebrow">
+									{post.data.category ?? 'Engineering'} <span class="dot">·</span>
+									<FormattedDate date={post.data.pubDate} />
+								</p>
+								<h3>{post.data.title}</h3>
+								<p class="card-dek">{post.data.description}</p>
+							</a>
+						))}
+					</section>
+				</>
+			)}
+
+			{archive.length > 0 && (
+				<section class="archive">
+					<p class="eyebrow">Continue reading</p>
+					<ul>
+						{archive.map((post) => (
+							<li>
+								<a href={`/blog/${post.id}/`}>
+									<span class="archive-title">{post.data.title}</span>
+									<span class="archive-meta">
+										{post.data.category ?? 'Engineering'} <span class="dot">·</span>
+										<FormattedDate date={post.data.pubDate} />
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+
+			<aside class="newsletter-strip" aria-label="Newsletter">
+				<div class="newsletter-card">
+					<div class="newsletter-copy">
+						<p class="newsletter-eyebrow">The engineering letter</p>
+						<h2>Deep-dive. No fluff.</h2>
+						<p class="newsletter-sub">Architecture notes, playbooks, and postmortems from the team building Emitrr's communications stack.</p>
+					</div>
+					<div class="newsletter-form">
+						<script src="https://js.hsforms.net/forms/embed/5415045.js" defer></script>
+						<div class="hs-form-frame" data-region="na1" data-form-id="ab15e5d8-bac1-46a4-8ce9-0c053ac23074" data-portal-id="5415045"></div>
+					</div>
+				</div>
+			</aside>
+		</main>
+
+		<Footer />
+
+		<style>
+			.home {
+				display: flex;
+				flex-direction: column;
+				gap: 2.75rem;
+			}
+
+			/* Masthead */
+			.masthead {
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+				padding: 1rem 0 0;
+				margin-bottom: 0.5rem;
+			}
+			.masthead .eyebrow {
+				margin: 0;
+			}
+			.masthead h1 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 800;
+				font-size: clamp(2.4rem, 5.5vw, 4rem);
+				line-height: 1.05;
+				letter-spacing: -0.015em;
+				color: var(--ink-strong);
+			}
+			.lede {
+				margin: 0.25rem 0 0;
+				max-width: 38rem;
+				font-family: var(--font-serif);
+				font-size: 1.2rem;
+				line-height: 1.5;
+				color: var(--ink-muted);
+			}
+
+			/* Feature */
+			.feature {
+				display: grid;
+				grid-template-columns: 1.15fr 1fr;
+				gap: 2.25rem;
+				align-items: center;
+				margin-top: 1.5rem;
+			}
+			.feature-media {
+				display: block;
+				border-radius: var(--radius-lg);
+				overflow: hidden;
+				background: var(--surface-sunk);
+			}
+			.feature-media img {
+				width: 100%;
+				height: 100%;
+				max-height: 460px;
+				object-fit: cover;
+				display: block;
+			}
+			.feature-media-fallback {
+				width: 100%;
+				aspect-ratio: 5/4;
+				background: var(--surface-sunk);
+			}
+			.feature-body {
+				display: flex;
+				flex-direction: column;
+				gap: 0.85rem;
+			}
+			.feature-body h2 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 800;
+				font-size: clamp(1.8rem, 3vw, 2.4rem);
+				line-height: 1.1;
+				letter-spacing: -0.01em;
+				color: var(--ink-strong);
+			}
+			.feature-body h2 a {
+				color: inherit;
+			}
+			.feature-body h2 a:hover {
+				color: var(--accent-ink);
+			}
+			.feature-dek {
+				margin: 0;
+				font-family: var(--font-serif);
+				font-size: 1.1rem;
+				line-height: 1.55;
+				color: var(--ink-muted);
+			}
+			.read-link {
+				margin-top: 0.4rem;
+				align-self: flex-start;
+				font-family: var(--font-sans);
+				font-weight: 600;
+				font-size: 14px;
+				color: var(--ink);
+				border-bottom: 1.5px solid var(--accent);
+				padding-bottom: 2px;
+			}
+			.read-link:hover {
+				color: var(--accent-ink);
+			}
+
+			/* Sleek section divider — short rule, brand dot, short rule */
+			.section-divider {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 1rem;
+				padding: 1.25rem 0;
+				margin: 0.5rem auto 0.25rem;
+				width: 100%;
+				max-width: 22rem;
+			}
+			.section-divider .rule {
+				flex: 1;
+				height: 1px;
+				background: var(--line-strong);
+			}
+			.section-divider .dot-mark {
+				width: 5px;
+				height: 5px;
+				border-radius: 50%;
+				background: var(--accent);
+				flex-shrink: 0;
+			}
+
+			/* Card eyebrow shared */
+			.card-eyebrow {
+				margin: 0;
+				font-family: var(--font-sans);
+				font-size: var(--eyebrow-size);
+				font-weight: 600;
+				letter-spacing: var(--eyebrow-tracking);
+				text-transform: uppercase;
+				color: var(--ink-faint);
+				display: inline-flex;
+				gap: 0.4rem;
+				align-items: center;
+			}
+			.card-eyebrow .dot,
+			.archive-meta .dot {
+				color: var(--ink-faint);
+			}
+
+			/* Secondary cards */
+			.secondary {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 1.75rem;
+			}
+			.card {
+				display: flex;
+				flex-direction: column;
+				gap: 0.55rem;
+				color: var(--ink);
+				transition: transform 160ms ease;
+			}
+			.card:hover {
+				transform: translateY(-2px);
+			}
+			.card-media {
+				width: 100%;
+				aspect-ratio: 4/3;
+				border-radius: var(--radius-md);
+				overflow: hidden;
+				background: var(--surface-sunk);
+				margin-bottom: 0.4rem;
+			}
+			.card-media img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				display: block;
+			}
+			.card-media-fallback {
+				width: 100%;
+				height: 100%;
+				background: var(--surface-sunk);
+			}
+			.card h3 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 700;
+				font-size: 1.15rem;
+				line-height: 1.25;
+				color: var(--ink-strong);
+				letter-spacing: -0.005em;
+			}
+			.card-dek {
+				margin: 0;
+				font-family: var(--font-sans);
+				font-size: 14px;
+				line-height: 1.55;
+				color: var(--ink-muted);
+			}
+
+			/* Archive list */
+			.archive {
+				display: flex;
+				flex-direction: column;
+				gap: 0.85rem;
+			}
+			.archive .eyebrow {
+				margin: 0;
+			}
+			.archive ul {
+				list-style: none;
+				padding: 0;
+				margin: 0.5rem 0 0;
+				border-top: 1px solid var(--line);
+			}
+			.archive li {
+				border-bottom: 1px solid var(--line);
+			}
+			.archive li a {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 1rem;
+				padding: 0.95rem 0;
+				color: var(--ink);
+				transition: color 120ms ease;
+			}
+			.archive li a:hover {
+				color: var(--accent-ink);
+			}
+			.archive-title {
+				font-family: var(--font-display);
+				font-weight: 700;
+				font-size: 1.05rem;
+				color: var(--ink-strong);
+			}
+			.archive-meta {
+				font-family: var(--font-sans);
+				font-size: 12px;
+				color: var(--ink-faint);
+				letter-spacing: 0.04em;
+				text-transform: uppercase;
+				white-space: nowrap;
+			}
+
+			/* Newsletter strip ─────────────────────────────────── */
+			.newsletter-strip {
+				margin-top: 5rem;
+			}
+			.newsletter-card {
+				background: var(--surface);
+				border: 1px solid var(--line-strong);
+				border-radius: var(--radius-lg);
+				padding: 2rem 1.75rem 1rem;
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+			}
+			.newsletter-eyebrow {
+				margin: 0;
+				font-family: var(--font-sans);
+				font-size: var(--eyebrow-size);
+				font-weight: 600;
+				letter-spacing: var(--eyebrow-tracking);
+				text-transform: uppercase;
+				color: var(--accent);
+			}
+			.newsletter-card h2 {
+				margin: 0;
+				font-family: var(--font-display);
+				font-weight: 800;
+				font-size: 1.5rem;
+				line-height: 1.2;
+				color: var(--ink-strong);
+			}
+			.newsletter-sub {
+				margin: 0;
+				font-family: var(--font-sans);
+				color: var(--ink-muted);
+				font-size: 14px;
+				line-height: 1.5;
+			}
+			.newsletter-form {
+				margin-top: 0.4rem;
+			}
+
+			@media (max-width: 900px) {
+				.feature {
+					grid-template-columns: 1fr;
+				}
+				.secondary {
+					grid-template-columns: repeat(2, 1fr);
+				}
+			}
+
+			@media (max-width: 640px) {
+				.secondary {
+					grid-template-columns: 1fr;
+				}
+				.archive li a {
+					flex-direction: column;
+					align-items: flex-start;
+					gap: 0.25rem;
+				}
+				.newsletter-card {
+					padding: 1.25rem 1.1rem 0.75rem;
+				}
+			}
+		</style>
+	</body>
+</html>
