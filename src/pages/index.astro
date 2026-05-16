@@ -33,7 +33,12 @@ const archive = rest.slice(3);
 				<p class="lede">{SITE_DESCRIPTION}</p>
 			</section>
 
-			<hr class="hairline" />
+			<div class="section-divider" role="separator" aria-hidden="true">
+				<span class="dot-mark"></span>
+				<span class="rule"></span>
+				<span class="rule"></span>
+				<span class="dot-mark"></span>
+			</div>
 
 			{feature && (
 				<section class="feature">
@@ -55,13 +60,14 @@ const archive = rest.slice(3);
 					</div>
 				</section>
 			)}
-
+ 
 			{secondary.length > 0 && (
 				<>
 					<div class="section-divider" role="separator" aria-hidden="true">
-						<span class="rule"></span>
 						<span class="dot-mark"></span>
 						<span class="rule"></span>
+						<span class="rule"></span>
+						<span class="dot-mark"></span>
 					</div>
 					<section class="secondary">
 						{secondary.map((post) => (
@@ -109,9 +115,39 @@ const archive = rest.slice(3);
 					<div class="newsletter-copy">
 						<p class="newsletter-eyebrow">The engineering letter</p>
 						<h2>Deep-dive. No fluff.</h2>
-						<p class="newsletter-sub">Architecture notes, playbooks, and postmortems from the team building Emitrr's communications stack.</p>
+						<p class="newsletter-sub">Get real-world engineering insights and priority access to roles at Emitrr.</p>
 					</div>
 					<div class="newsletter-form">
+						<script is:inline>
+							(() => {
+								if (window.__hsShadowPatched) return;
+								window.__hsShadowPatched = true;
+								const hideCss = `
+									.hsfc-Heading,
+									[class*="Recaptcha"],
+									[class*="recaptcha"],
+									.hs-richtext,
+									.hs-form-richtext {
+										display: none !important;
+									}
+								`;
+								const openRoots = new Set();
+								const inject = (root) => {
+									if (!root) return;
+									const s = document.createElement('style');
+									s.textContent = hideCss;
+									root.appendChild(s);
+								};
+								const orig = Element.prototype.attachShadow;
+								Element.prototype.attachShadow = function (init) {
+									const opts = Object.assign({}, init, { mode: 'open' });
+									const root = orig.call(this, opts);
+									openRoots.add(root);
+									inject(root);
+									return root;
+								};
+							})();
+						</script>
 						<script src="https://js.hsforms.net/forms/embed/5415045.js" defer></script>
 						<div class="hs-form-frame" data-region="na1" data-form-id="ab15e5d8-bac1-46a4-8ce9-0c053ac23074" data-portal-id="5415045"></div>
 					</div>
@@ -229,11 +265,10 @@ const archive = rest.slice(3);
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				gap: 1rem;
+				
 				padding: 1.25rem 0;
 				margin: 0.5rem auto 0.25rem;
 				width: 100%;
-				max-width: 22rem;
 			}
 			.section-divider .rule {
 				flex: 1;
@@ -401,7 +436,15 @@ const archive = rest.slice(3);
 				line-height: 1.5;
 			}
 			.newsletter-form {
-				margin-top: 0.4rem;
+				margin: 0.4rem -1rem 0;
+				width: calc(100% + 2rem);
+			}
+			.newsletter-form :global(.hs-form-frame),
+			.newsletter-form :global(.hs-form-frame iframe) {
+				width: 100% !important;
+				max-width: 100% !important;
+				margin: 0 !important;
+				display: block;
 			}
 
 			@media (max-width: 900px) {

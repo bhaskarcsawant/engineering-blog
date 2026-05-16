@@ -149,3 +149,16 @@ img {
 		padding: 2rem 1.2rem 2.5rem;
 	}
 }
+
+/* HubSpot newsletter form — hide marketing heading and reCAPTCHA */
+.hs-form-frame .hsfc-Heading,
+.hs-form-frame [class*="Recaptcha"],
+.hs-form-frame [class*="recaptcha"],
+.hs-form-frame .hs-richtext,
+.hs-form-frame .hs-form-richtext,
+.grecaptcha-badge {
+	display: none !important;
+}
+.hsfc-Heading{
+	display: none !important;
+}
